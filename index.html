@@ -11,3 +11,118 @@ layout: presentation
 <section id="overview" class="step" {% for attr in site.overview-data %} data-{{attr[0]}}="{{attr[1]}}"{% endfor %}></section>
 {% endif %}
 {% endunless %}
+
+
+# Modifying the provided code to allow one node to connect to multiple nodes
+
+modified_multi_connection_content = """
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+
+class FaultTreeEditor:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Fault Tree Editor")
+
+        # 创建一个Canvas来绘制和交互
+        self.canvas = tk.Canvas(self.root, bg="white", width=800, height=600)
+        self.canvas.pack(pady=20)
+
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        
+        # 右键菜单
+        self.popup_menu = tk.Menu(self.root, tearoff=0)
+        self.popup_menu.add_command(label="Delete Node", command=self.delete_node)
+        self.popup_menu.add_command(label="Rename Node", command=self.rename_node)
+        self.popup_menu.add_command(label="Add Logic Gate", command=self.add_gate)
+
+        self.canvas.bind("<Button-3>", self.show_context_menu)
+
+        # 存储节点和连接信息
+        self.nodes = {}
+        self.connections = []
+
+        self.current_start_node = None
+
+    def on_canvas_click(self, event):
+        # 当点击时，检查是否已选择起始节点
+        closest = self.canvas.find_closest(event.x, event.y)
+        if closest in [info["circle"] for info in self.nodes.values()]:
+            if self.current_start_node:
+                # 结束连接的操作
+                self.current_start_node = None
+            else:
+                # 开始新的连接操作
+                self.current_start_node = self.nodes[self.canvas.gettags(closest[0])[0]]
+        else:
+            if self.current_start_node:
+                # 连接到新节点
+                node_name = simpledialog.askstring("Node", "Enter node name:")
+                if node_name:
+                    self.create_node(event.x, event.y, node_name)
+            else:
+                # 创建新节点
+                node_name = simpledialog.askstring("Node", "Enter node name:")
+                if node_name:
+                    self.create_node(event.x, event.y, node_name)
+
+    def create_node(self, x, y, node_name):
+        # 在给定位置创建一个节点
+        circle = self.canvas.create_oval(x-20, y-20, x+20, y+20, fill="lightblue", tags=node_name)
+        text = self.canvas.create_text(x, y, text=node_name, tags=node_name)
+        
+        # 存储节点信息
+        self.nodes[node_name] = {"circle": circle, "text": text, "x": x, "y": y}
+
+        # 如果已选择起始节点，则连接节点
+        if self.current_start_node:
+            start_x, start_y = self.current_start_node["x"], self.current_start_node["y"]
+            self.canvas.create_line(start_x, start_y, x, y)
+            self.connections.append((self.current_start_node, self.nodes[node_name]))
+
+    def delete_node(self):
+        # 删除选中的节点
+        node_name = self.selected_node
+        if node_name in self.nodes:
+            self.canvas.delete(self.nodes[node_name]["circle"])
+            self.canvas.delete(self.nodes[node_name]["text"])
+            del self.nodes[node_name]
+
+    def rename_node(self):
+        # 重命名选中的节点
+        node_name = self.selected_node
+        if node_name in self.nodes:
+            new_name = simpledialog.askstring("Rename Node", "Enter new name:", initialvalue=node_name)
+            if new_name:
+                self.canvas.itemconfig(self.nodes[node_name]["text"], text=new_name)
+                self.nodes[new_name] = self.nodes[node_name]
+                del self.nodes[node_name]
+
+    def add_gate(self):
+        # 为选中的节点添加逻辑门
+        node_name = self.selected_node
+        if node_name in self.nodes:
+            gate_type = simpledialog.askstring("Logic Gate", "Enter gate type (AND, OR, etc.):")
+            if gate_type:
+                x, y = self.nodes[node_name]["x"], self.nodes[node_name]["y"]
+                self.canvas.create_text(x, y-30, text=gate_type)
+
+    def show_context_menu(self, event):
+        # 在鼠标位置显示右键菜单
+        selected = self.canvas.find_closest(event.x, event.y)
+        if selected:
+            self.selected_node = self.canvas.gettags(selected[0])[0]
+            self.popup_menu.post(event.x_root, event.y_root)
+
+root = tk.Tk()
+editor = FaultTreeEditor(root)
+root.mainloop()
+"""
+
+# Writing the modified content to a new file for user to download
+file_path_multi = "/mnt/data/modified_multi_connection_demo.py"
+with open(file_path_multi, "w") as file:
+    file.write(modified_multi_connection_content)
+
+file_path_multi
+
